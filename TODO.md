@@ -21,13 +21,16 @@ Each item is also marked `// TODO` in the code where it belongs.
 
 ## sinks (destinations) — `sink/`
 - [x] `Sink` interface and `SinkFactory` (builds the list once)
-- [ ] Build the real sinks in `SinkFactory.createSinks()`: ConsoleSink, FileSink, DbSink, KafkaSink
-- [ ] Delete the temporary `sink/PrintSink` once ConsoleSink exists
-- [ ] Add `close()` to `Sink`
+- [x] `ConsoleSink` and `FileSink`; `SinkFactory` builds one per output, each with its own format
+- [x] `FileSink`: new file per hour/day (`time-range`), moves a full file to a backup (`max-size`)
+- [ ] `max-backups` setting, to delete the oldest backups (`sink/FileSink`)
+- [ ] `DbSink` and `KafkaSink` (`SinkFactory` fails at startup for db/kafka until then)
+- [x] Delete the temporary `sink/PrintSink`
+- [x] Add `close()` to `Sink`
 
 ## shutdown() — `manager/ShutdownManager`
 - [x] Write out any messages still waiting in the queue (async)
-- [ ] Close the sinks (e.g. close open files)
+- [x] Close the sinks (`SinkFactory.closeAll()`)
 
 ## config — `manager/model/LoggerConfig`, `util/YamlFileReader`, `src/main/resources/logger.yaml`
 - [x] Add settings: mode, level, outputs (console, file) with format, location, time-duration
