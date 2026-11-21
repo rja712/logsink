@@ -1,6 +1,6 @@
 package org.example.logger.util;
 
-import org.example.logger.model.LogLevel;
+import org.example.logger.manager.model.LogLevel;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

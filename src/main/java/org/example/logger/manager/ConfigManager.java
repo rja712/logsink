@@ -1,6 +1,6 @@
 package org.example.logger.manager;
 
-import org.example.logger.model.LoggerConfig;
+import org.example.logger.manager.model.LoggerConfig;
 import org.example.logger.util.YamlFileReader;
 
 import java.nio.file.Path;

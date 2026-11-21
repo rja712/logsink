@@ -1,4 +1,4 @@
-package org.example.logger.model.output;
+package org.example.logger.manager.model.output;
 
 /**
  * Kafka output settings.

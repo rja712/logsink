@@ -1,4 +1,4 @@
-package org.example.logger.model;
+package org.example.logger.manager.model;
 
 /**
  * How log messages are written.

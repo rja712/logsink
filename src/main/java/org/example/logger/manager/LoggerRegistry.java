@@ -3,8 +3,8 @@ package org.example.logger.manager;
 import org.example.logger.api.impl.AsyncLogger;
 import org.example.logger.api.Logger;
 import org.example.logger.api.impl.SyncLogger;
-import org.example.logger.model.LoggerConfig;
-import org.example.logger.model.Mode;
+import org.example.logger.manager.model.LoggerConfig;
+import org.example.logger.manager.model.Mode;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

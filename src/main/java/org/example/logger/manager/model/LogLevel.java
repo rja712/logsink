@@ -1,4 +1,4 @@
-package org.example.logger.model;
+package org.example.logger.manager.model;
 
 /** Log levels, from least to most important. */
 public enum LogLevel {

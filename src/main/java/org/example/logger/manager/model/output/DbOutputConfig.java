@@ -1,4 +1,4 @@
-package org.example.logger.model.output;
+package org.example.logger.manager.model.output;
 
 /**
  * Database output settings. No format: rows are stored as fields, not as text lines.

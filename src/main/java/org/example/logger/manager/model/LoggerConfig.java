@@ -1,6 +1,6 @@
-package org.example.logger.model;
+package org.example.logger.manager.model;
 
-import org.example.logger.model.output.OutputConfig;
+import org.example.logger.manager.model.output.OutputConfig;
 
 import java.util.List;
 

@@ -2,8 +2,8 @@ package org.example.logger.api.impl;
 
 import org.example.logger.api.Logger;
 import org.example.logger.manager.ShutdownManager;
-import org.example.logger.model.LogLevel;
-import org.example.logger.model.LoggerConfig;
+import org.example.logger.manager.model.LogLevel;
+import org.example.logger.manager.model.LoggerConfig;
 import org.example.logger.util.LineFormatter;
 
 /**

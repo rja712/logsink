@@ -1,14 +1,14 @@
 package org.example.logger.util;
 
-import org.example.logger.model.LogLevel;
-import org.example.logger.model.LoggerConfig;
-import org.example.logger.model.Mode;
-import org.example.logger.model.output.ConsoleOutputConfig;
-import org.example.logger.model.output.DbOutputConfig;
-import org.example.logger.model.output.FileOutputConfig;
-import org.example.logger.model.output.KafkaOutputConfig;
-import org.example.logger.model.output.OutputConfig;
-import org.example.logger.model.output.OutputType;
+import org.example.logger.manager.model.LogLevel;
+import org.example.logger.manager.model.LoggerConfig;
+import org.example.logger.manager.model.Mode;
+import org.example.logger.manager.model.output.ConsoleOutputConfig;
+import org.example.logger.manager.model.output.DbOutputConfig;
+import org.example.logger.manager.model.output.FileOutputConfig;
+import org.example.logger.manager.model.output.KafkaOutputConfig;
+import org.example.logger.manager.model.output.OutputConfig;
+import org.example.logger.manager.model.output.OutputType;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
