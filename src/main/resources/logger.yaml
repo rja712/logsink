@@ -25,9 +25,10 @@ output:
   console:
     format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>] <message> <throwable trace>'
   file:
-    location: /resources/<time_range>
+    location: /out/log/<time_range>
     # seconds before the next file is started
-    time-duration: 3600
+    time-range: hourly
+    max-size: 10MB
     format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>] <message> <throwable trace>'
 
 # DB and Kafka details, used only if those outputs are enabled.
