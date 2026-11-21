@@ -1,6 +1,7 @@
 package org.example.logger.manager;
 
 import org.example.logger.orchestrator.AsyncListener;
+import org.example.logger.sink.SinkFactory;
 
 public class ShutdownManager {
 
@@ -31,7 +32,7 @@ public class ShutdownManager {
             asyncListener.stop();   // 2. write out what's still in the queue, then end the thread
         }
 
-        // TODO: close the sinks (e.g. close open files)
+        SinkFactory.getInstance().closeAll();   // 3. close the sinks (e.g. close open files)
     }
 
     public boolean isShutDown() {

@@ -33,7 +33,7 @@ public class Main {
             OrderService orderService = new OrderService(database);
 
             // 3. do some work
-            userService.register("ankit", "ankit@mail.com");
+            userService.register("ankit", "ankit@gmail.com");
             userService.register("ravi", "no-at-sign");
             orderService.placeOrder("ankit", 250);
             orderService.placeOrder("ankit", 0);

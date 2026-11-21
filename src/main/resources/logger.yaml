@@ -25,9 +25,13 @@ output:
   console:
     format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>] <message> <throwable trace>'
   file:
-    location: /out/log/<time_range>
-    # seconds before the next file is started
+    # Path of the log file, relative to where the app runs. <time_range> is
+    # replaced by the hour or day, so a new file starts every hour or day.
+    location: out/log/<time_range>.log
+    # hourly or daily (left out means daily)
     time-range: hourly
+    # When a file reaches this size it is moved to a backup (.1, .2, ...) and a
+    # fresh file starts. KB, MB or GB. Left out means no limit.
     max-size: 10MB
     format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>] <message> <throwable trace>'
 
