@@ -3,7 +3,6 @@ package org.example.app;
 import org.example.logger.LogManager;
 import org.example.logger.api.Logger;
 
-/** Pretend database. Needs nothing. */
 public class Database {
 
     private final Logger log = LogManager.getInstance().getLogger(Database.class);

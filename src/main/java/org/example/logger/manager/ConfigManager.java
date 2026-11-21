@@ -1,25 +1,19 @@
 package org.example.logger.manager;
 
-import org.example.logger.manager.model.LoggerConfig;
-import org.example.logger.util.YamlFileReader;
+import org.example.logger.api.ServiceInfo;
+import org.example.logger.model.LoggerConfig;
+import org.example.logger.util.ConfigReaderUtil;
 
 import java.nio.file.Path;
 
-/**
- * Helper 1: takes the configuration.
- * Asks YamlFileReader to read the file, stores the LoggerConfig it returns,
- * and hands it out to whoever needs it (e.g. LoggerRegistry).
- *
- * Singleton: there is exactly one, created when the class loads.
- * Get it with ConfigManager.getInstance().
- */
 public class ConfigManager {
 
     private static final ConfigManager INSTANCE = new ConfigManager();
 
-    private final YamlFileReader yamlReader = new YamlFileReader();
+    private final ConfigReaderUtil yamlReader = new ConfigReaderUtil();
 
-    private LoggerConfig config;
+    private LoggerConfig config;          // from the YAML file
+    private ServiceInfo serviceInfo;      // from the app
 
     private ConfigManager() {
     }
@@ -28,8 +22,7 @@ public class ConfigManager {
         return INSTANCE;
     }
 
-    /** Reads the YAML file at the given path. Can only be done once. */
-    public void load(String yamlPath) {
+    public void load(String yamlPath, ServiceInfo serviceInfo) {
         if (config != null) {
             throw new IllegalStateException("Logging is already initialized");
         }
@@ -38,13 +31,18 @@ public class ConfigManager {
         }
 
         config = yamlReader.read(Path.of(yamlPath));
+        this.serviceInfo = serviceInfo != null ? serviceInfo : new ServiceInfo(null, null, null);
     }
 
-    /** Returns the stored config. Fails if load() was never called. */
     public LoggerConfig get() {
         if (config == null) {
-            throw new IllegalStateException("Call LogManager.initialize(path) first");
+            throw new IllegalStateException("Call LogManager.initialize(path, serviceInfo) first");
         }
         return config;
+    }
+
+    public ServiceInfo getServiceInfo() {
+        get();   // same "initialize first" check
+        return serviceInfo;
     }
 }

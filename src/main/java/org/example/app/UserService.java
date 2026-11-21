@@ -3,7 +3,6 @@ package org.example.app;
 import org.example.logger.LogManager;
 import org.example.logger.api.Logger;
 
-/** Registers users. Needs Database and EmailService. */
 public class UserService {
 
     private final Logger log = LogManager.getInstance().getLogger(UserService.class);

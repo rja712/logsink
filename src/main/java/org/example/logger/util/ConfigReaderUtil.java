@@ -1,14 +1,17 @@
 package org.example.logger.util;
 
-import org.example.logger.manager.model.LogLevel;
-import org.example.logger.manager.model.LoggerConfig;
-import org.example.logger.manager.model.Mode;
-import org.example.logger.manager.model.output.ConsoleOutputConfig;
-import org.example.logger.manager.model.output.DbOutputConfig;
-import org.example.logger.manager.model.output.FileOutputConfig;
-import org.example.logger.manager.model.output.KafkaOutputConfig;
-import org.example.logger.manager.model.output.OutputConfig;
-import org.example.logger.manager.model.output.OutputType;
+import org.example.logger.model.LogLevel;
+import org.example.logger.model.LoggerConfig;
+import org.example.logger.model.Mode;
+import org.example.logger.model.mode.AsyncModeConfig;
+import org.example.logger.model.mode.ModeConfig;
+import org.example.logger.model.mode.SyncModeConfig;
+import org.example.logger.model.output.ConsoleOutputConfig;
+import org.example.logger.model.output.DbOutputConfig;
+import org.example.logger.model.output.FileOutputConfig;
+import org.example.logger.model.output.KafkaOutputConfig;
+import org.example.logger.model.output.OutputConfig;
+import org.example.logger.model.output.OutputType;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -25,29 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Reads the YAML config file and returns a LoggerConfig.
- * All reading, parsing and checking of the file happens here.
- *
- * It works in two steps:
- *   1. file -> flat key/value map    (nested keys joined with dots)
- *   2. map  -> LoggerConfig          (mode, level, outputs, with checks)
- *
- * Rules:
- *   mode   - optional, default sync
- *   level  - required
- *   output - optional, default console. Each one must be an OutputType.
- *
- * We can't use a YAML library (JDK only), so step 1 handles just what we need:
- * "key: value" lines, nesting by indentation (spaces only), and # comments.
- */
-public class YamlFileReader {
+public class ConfigReaderUtil {
 
-    /** Reads the file at the given path and turns it into a LoggerConfig. */
     public LoggerConfig read(Path file) {
         Map<String, String> values = readKeyValues(file);
 
-        Mode mode = readMode(values);
+        ModeConfig mode = readMode(values);
         LogLevel level = readLevel(values);
         List<OutputConfig> outputs = readOutputs(values);
 
@@ -65,15 +51,14 @@ public class YamlFileReader {
     // TODO: support lists ("- item") if the config ever needs them.
     // ------------------------------------------------------------------
 
-    /** A section we are currently inside, like "output" or "output.file". */
-    private record Section(int indent, String fullKey) {
-    }
-
     private Map<String, String> readKeyValues(Path file) {
         List<String> lines = readLines(file);
 
         Map<String, String> values = new LinkedHashMap<>();
-        Deque<Section> openSections = new ArrayDeque<>();
+        // The sections the current line can be inside, innermost on top.
+        // Two stacks, always pushed and popped together: one for the indent, one for the full key.
+        Deque<Integer> sectionIndents = new ArrayDeque<>();
+        Deque<String> sectionKeys = new ArrayDeque<>();
 
         for (int i = 0; i < lines.size(); i++) {
             String raw = lines.get(i);
@@ -107,17 +92,19 @@ public class YamlFileReader {
                     : removeTrailingComment(rest).strip();
 
             // Leave the sections this line is not inside of (same or smaller indent).
-            while (!openSections.isEmpty() && openSections.peek().indent() >= indent) {
-                openSections.pop();
+            while (!sectionIndents.isEmpty() && sectionIndents.peek() >= indent) {
+                sectionIndents.pop();
+                sectionKeys.pop();
             }
 
-            String fullKey = openSections.isEmpty() ? key : openSections.peek().fullKey() + "." + key;
+            String fullKey = sectionKeys.isEmpty() ? key : sectionKeys.peek() + "." + key;
             values.put(fullKey, value);
 
             // "key:" with nothing after it starts a new section. "key: ''" does not:
             // that is an empty value.
             if (value.isEmpty() && !quoted) {
-                openSections.push(new Section(indent, fullKey));
+                sectionIndents.push(indent);
+                sectionKeys.push(fullKey);
             }
         }
         return values;
@@ -138,13 +125,6 @@ public class YamlFileReader {
         return hash >= 0 ? value.substring(0, hash) : value;
     }
 
-    /**
-     * Returns the text inside the quotes the value starts with.
-     * Anything after the closing quote is a comment.
-     *
-     * A value starting with '[' or '{' has to be quoted to stay valid YAML,
-     * which is why the format lines in logger.yaml are written that way.
-     */
     private String readQuoted(String text, Path file, int lineNumber) {
         char quote = text.charAt(0);
         int end = text.indexOf(quote, 1);
@@ -159,15 +139,57 @@ public class YamlFileReader {
     // Step 2: map -> LoggerConfig
     // ------------------------------------------------------------------
 
-    private Mode readMode(Map<String, String> values) {
+    private ModeConfig readMode(Map<String, String> values) {
         String text = values.get("mode");
-        if (text == null || text.isEmpty()) {
-            return Mode.SYNC;
+
+        if (text == null) {
+            return new SyncModeConfig();
         }
+        if (!text.isEmpty()) {
+            return readModeConfig(readModeType(text), Map.of());
+        }
+
+        // "mode:" opened a section, so "type" has to say which mode is in use.
+        String typeText = values.get("mode.type");
+        if (typeText == null || typeText.isEmpty()) {
+            throw new IllegalArgumentException("The 'mode' section needs a 'type'. Use sync or async");
+        }
+        Mode type = readModeType(typeText);
+
+        checkModeNames(values);
+
+        Map<String, String> settings = settingsUnder(values, "mode." + type.yamlName() + ".");
+        checkSettingsAllowed("Mode '" + type + "'", type.allowedSettings(), settings);
+        return readModeConfig(type, settings);
+    }
+
+    private ModeConfig readModeConfig(Mode type, Map<String, String> settings) {
+        return switch (type) {
+            case SYNC -> new SyncModeConfig();
+
+            case ASYNC -> new AsyncModeConfig(
+                    positiveInt("Mode '" + type + "'", settings, "queue-size",
+                            AsyncModeConfig.DEFAULT_QUEUE_SIZE));
+        };
+    }
+
+    private Mode readModeType(String text) {
         try {
             return Mode.valueOf(text.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Unknown mode '" + text + "'. Use sync or async");
+        }
+    }
+
+    private void checkModeNames(Map<String, String> values) {
+        for (String key : values.keySet()) {
+            if (!key.startsWith("mode.")) {
+                continue;
+            }
+            String name = key.substring("mode.".length()).split("\\.")[0];
+            if (!name.equals("type")) {
+                readModeType(name);
+            }
         }
     }
 
@@ -184,15 +206,6 @@ public class YamlFileReader {
         }
     }
 
-    /**
-     * Turns the "output" section into one OutputConfig per destination:
-     *
-     *   output:
-     *     console:                     ->  ConsoleOutputConfig(format)
-     *       format: ...
-     *     file:                        ->  FileOutputConfig(location, timeDurationSeconds, format)
-     *       location: ...
-     */
     private List<OutputConfig> readOutputs(Map<String, String> values) {
         // 1. find the names directly under "output" (console, file, ...)
         Set<String> names = new LinkedHashSet<>();
@@ -212,34 +225,32 @@ public class YamlFileReader {
         for (String name : names) {
             OutputType type = readOutputType(name);
             Map<String, String> settings = settingsUnder(values, "output." + name + ".");
-            checkSettingsAllowed(type, settings);
+            checkSettingsAllowed("Output '" + type + "'", type.allowedSettings(), settings);
             outputs.add(readOutput(type, settings));
         }
         return outputs;
     }
 
-    /**
-     * Builds the right config class for the type.
-     * Adding a new OutputType makes this switch fail to compile until you add its case here.
-     */
     private OutputConfig readOutput(OutputType type, Map<String, String> settings) {
+        String what = "Output '" + type + "'";
+
         // TODO: check the format text once the formatter exists
         return switch (type) {
             case CONSOLE -> new ConsoleOutputConfig(
                     settings.get("format"));
 
             case FILE -> new FileOutputConfig(
-                    required(type, settings, "location"),
-                    positiveNumber(type, settings, "time-duration", 3600),
+                    required(what, settings, "location"),
+                    positiveNumber(what, settings, "time-duration", 3600),
                     settings.get("format"));
 
             case DB -> new DbOutputConfig(
-                    required(type, settings, "url"),
-                    required(type, settings, "table"));
+                    required(what, settings, "url"),
+                    required(what, settings, "table"));
 
             case KAFKA -> new KafkaOutputConfig(
-                    required(type, settings, "brokers"),
-                    required(type, settings, "topic"));
+                    required(what, settings, "brokers"),
+                    required(what, settings, "topic"));
         };
     }
 
@@ -252,7 +263,6 @@ public class YamlFileReader {
         }
     }
 
-    /** All keys that start with the prefix, with the prefix removed. */
     private Map<String, String> settingsUnder(Map<String, String> values, String prefix) {
         Map<String, String> settings = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : values.entrySet()) {
@@ -263,25 +273,27 @@ public class YamlFileReader {
         return settings;
     }
 
-    /** Fails if a setting doesn't belong to this output, e.g. "format" under db. */
-    private void checkSettingsAllowed(OutputType type, Map<String, String> settings) {
+    // The checks below are shared by outputs and modes, so "what" is the subject
+    // of the message, e.g. "Output 'FILE'" or "Mode 'ASYNC'".
+
+    private void checkSettingsAllowed(String what, Set<String> allowed, Map<String, String> settings) {
         for (String key : settings.keySet()) {
-            if (!type.allowedSettings().contains(key)) {
-                throw new IllegalArgumentException("Output '" + type + "' doesn't use '" + key
-                        + "'. It uses: " + type.allowedSettings());
+            if (!allowed.contains(key)) {
+                throw new IllegalArgumentException(what + " doesn't use '" + key
+                        + "'. It uses: " + allowed);
             }
         }
     }
 
-    private String required(OutputType type, Map<String, String> settings, String key) {
+    private String required(String what, Map<String, String> settings, String key) {
         String value = settings.get(key);
         if (value == null || value.isEmpty()) {
-            throw new IllegalArgumentException("Output '" + type + "' needs a '" + key + "'");
+            throw new IllegalArgumentException(what + " needs a '" + key + "'");
         }
         return value;
     }
 
-    private long positiveNumber(OutputType type, Map<String, String> settings, String key, long defaultValue) {
+    private long positiveNumber(String what, Map<String, String> settings, String key, long defaultValue) {
         String value = settings.get(key);
         if (value == null || value.isEmpty()) {
             return defaultValue;
@@ -294,7 +306,16 @@ public class YamlFileReader {
         } catch (NumberFormatException ignored) {
             // falls through to the error below
         }
-        throw new IllegalArgumentException("Output '" + type + "': " + key
+        throw new IllegalArgumentException(what + ": " + key
                 + " must be a positive number, got '" + value + "'");
+    }
+
+    private int positiveInt(String what, Map<String, String> settings, String key, int defaultValue) {
+        long number = positiveNumber(what, settings, key, defaultValue);
+        if (number > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(what + ": " + key
+                    + " must not be more than " + Integer.MAX_VALUE + ", got " + number);
+        }
+        return (int) number;
     }
 }

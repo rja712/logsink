@@ -1,7 +1,19 @@
 # Logging settings for the app.
 
-# Choose either sync or async
-mode: async
+# How messages are written. 'type' says which mode is in use; the block named by
+# it is the one that is read, so the other mode's settings can stay here too.
+mode:
+  type: async
+
+  sync:
+    # Nothing to configure: the caller's thread writes the message to every sink
+    # before returning, so there is no queue and no background thread to size.
+    # Settings will go here when there are any.
+
+  async:
+    # How many messages the queue holds before the app's thread has to wait for
+    # the background thread to catch up. Left out means 10000.
+    queue-size: 10000
 
 # Lowest level to log: DEBUG, INFO, WARN, ERROR (anything above it is logged too)
 level: INFO
@@ -11,12 +23,12 @@ level: INFO
 # otherwise read as a list, which made this file fail to parse.
 output:
   console:
-    format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>][<message>] [<throwable trace>]'
+    format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>] <message> <throwable trace>'
   file:
     location: /resources/<time_range>
     # seconds before the next file is started
     time-duration: 3600
-    format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>][<message>] [<throwable trace>]'
+    format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>] <message> <throwable trace>'
 
 # DB and Kafka details, used only if those outputs are enabled.
 #

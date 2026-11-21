@@ -4,29 +4,41 @@ What the library should do inside, step by step.
 Each item is also marked `// TODO` in the code where it belongs.
 
 ## initialize(yamlPath) — `LogManager`, `manager/ConfigManager`
-- [ ] Create the output destinations (console, file) from config
-- [ ] Create the formatter (how a line looks) from config
-- [x] Pick SyncLogger or AsyncLogger from "mode" (`manager/LoggerRegistry`)
-- [ ] If mode is async, start the background thread that empties the queue
 - [x] Read mode, level and outputs in `ConfigManager.load()`
+- [x] Pick SyncOrchestrator or AsyncOrchestrator from "mode", once (`manager/LoggerRegistry`)
+- [x] If mode is async, start the background thread that empties the queue (`orchestrator/AsyncListener`)
+- [x] Create the formatter (how a line looks) from the output's `format` (`util/LineFormatter`)
+- [ ] JVM shutdown hook that calls shutdown(), so queued events aren't lost if the app forgets (`orchestrator/AsyncListener`)
 
-## logging a message — `api/SyncLogger`, `api/AsyncLogger`
-- [ ] SyncLogger: send the line to every output destination on the caller's thread
-- [ ] AsyncLogger: put the message on a BlockingQueue; a background thread writes it out
-- [ ] Use the formatter instead of the fixed line in `util/LineFormatter`
+## logging a message — `api/impl/DefaultLogger`, `orchestrator/`
+- [x] One logger (`DefaultLogger`); sync/async is decided by the `Orchestrator` picked from "mode"
+- [x] sync: `SyncOrchestrator` → every sink, one by one, on the caller's thread
+- [x] async: `AsyncOrchestrator` → BlockingQueue → `AsyncListener` (background thread) → every sink
+- [x] Read the queue size from the YAML (`mode.async.queue-size`, default 10,000)
+- [x] `LineFormatter` turns a `LogEvent` into text using the `format` from the YAML
+- [x] `<ip>`, `<service_name>`, `<version>` come from the app: `api/ServiceInfo`, passed to `LogManager.initialize(path, serviceInfo)`
+- [x] `<line_number>` is looked up by the library (`util/LineNumberUitl`), only if a format uses it
+
+## sinks (destinations) — `sink/`
+- [x] `Sink` interface and `SinkFactory` (builds the list once)
+- [ ] Build the real sinks in `SinkFactory.createSinks()`: ConsoleSink, FileSink, DbSink, KafkaSink
+- [ ] Delete the temporary `sink/PrintSink` once ConsoleSink exists
+- [ ] Add `close()` to `Sink`
 
 ## shutdown() — `manager/ShutdownManager`
-- [ ] Write out any messages still waiting (needed once async exists)
-- [ ] Close the output destinations (e.g. close open files)
+- [x] Write out any messages still waiting in the queue (async)
+- [ ] Close the sinks (e.g. close open files)
 
-## config — `model/LoggerConfig`, `util/YamlFileReader`, `src/main/resources/logger.yaml`
+## config — `manager/model/LoggerConfig`, `util/YamlFileReader`, `src/main/resources/logger.yaml`
 - [x] Add settings: mode, level, outputs (console, file) with format, location, time-duration
-- [x] Output type is an enum (`model/output/OutputType`); each type has its own config class
+- [x] Output type is an enum (`manager/model/output/OutputType`); each type has its own config class
 - [x] Support nested sections in `YamlFileReader`
+- [x] `mode` is a section: `type` picks sync or async, each with its own settings
+      (`model/Mode` lists them, `model/mode/` holds one config class per mode)
 - [ ] Support lists in `YamlFileReader` if the config needs them
 - [x] Read db and kafka outputs from config
 - [ ] Confirm db and kafka settings (first guess: db url + table, kafka brokers + topic)
-- [ ] Check the format text once the formatter exists
+- [x] Unknown placeholders in `format` fail at startup (`LineFormatter`)
 
 ## later
 - [ ] Tests with JUnit

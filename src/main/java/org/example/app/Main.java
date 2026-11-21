@@ -2,20 +2,23 @@ package org.example.app;
 
 import org.example.logger.LogManager;
 import org.example.logger.api.Logger;
+import org.example.logger.api.ServiceInfo;
 
-/**
- * Start here.
- *   1. initialize logging with the path of the YAML config file
- *   2. create the app's objects
- *   3. do some work
- *   4. shut logging down (in finally, so it always happens)
- */
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 public class Main {
 
-    public static void main(String[] args) {
-        // 1. initialize logging: the app only gives the path, the library reads the file
+    public static void main(String[] args) throws UnknownHostException {
+        // 1. initialize logging: the app gives the config file path, plus who it is.
+        //    How the app finds its name, version and IP is up to the app.
+        ServiceInfo serviceInfo = new ServiceInfo(
+                "demo-app",
+                "1.0.0",
+                InetAddress.getLocalHost().getHostAddress());
+
         LogManager logManager = LogManager.getInstance();
-        logManager.initialize("src/main/resources/logger.yaml");
+        logManager.initialize("src/main/resources/logger.yaml", serviceInfo);
         Logger log = logManager.getLogger(Main.class);
 
         try {

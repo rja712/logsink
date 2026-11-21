@@ -1,57 +1,52 @@
 package org.example.logger.manager;
 
-import org.example.logger.api.impl.AsyncLogger;
 import org.example.logger.api.Logger;
-import org.example.logger.api.impl.SyncLogger;
-import org.example.logger.manager.model.LoggerConfig;
-import org.example.logger.manager.model.Mode;
+import org.example.logger.api.DefaultLoggerImplementation;
+import org.example.logger.model.LoggerConfig;
+import org.example.logger.model.Mode;
+import org.example.logger.orchestrator.AsyncListener;
+import org.example.logger.orchestrator.AsyncOrchestrator;
+import org.example.logger.orchestrator.Orchestrator;
+import org.example.logger.orchestrator.SyncOrchestrator;
+import org.example.logger.util.LineFormatterUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Helper 2: gives out loggers.
- * Creates one logger per class and reuses it, so asking twice gives the same object.
- *
- * Sync or async is decided ONCE, in the constructor, from the config.
- * It is stored in a final field, so it can't change while the app runs:
- * every logger this registry ever gives out is the same kind.
- *
- * Singleton, but created lazily: it needs the config, which only exists after
- * LogManager.initialize() has loaded the YAML. So it is built on the first
- * getInstance() call, and the same one is returned forever after.
- */
 public class LoggerRegistry {
 
     // volatile so every thread sees the fully built registry once it's set
     private static volatile LoggerRegistry instance;
 
     private final Map<String, Logger> loggers = new ConcurrentHashMap<>();
-    private final Mode mode;
     private final LoggerConfig config;
     private final ShutdownManager shutdownManager;
 
+    private final Orchestrator orchestrator;    // fixed for the life of the registry
+    private final AsyncListener asyncListener;  // only in async mode; null in sync mode
+    private final boolean findLineNumber;       // looking it up costs time, so only if a format uses it
+
     private LoggerRegistry(LoggerConfig config, ShutdownManager shutdownManager) {
-        this.mode = config.mode();
         this.config = config;
         this.shutdownManager = shutdownManager;
+        this.findLineNumber = config.outputs().stream()
+                .anyMatch(output -> LineFormatterUtil.usesLineNumber(output.format()));
+
+        if (config.mode().type() == Mode.SYNC) {
+            this.orchestrator = new SyncOrchestrator();
+            this.asyncListener = null;
+        } else {
+            // Both use the one shared LogQueue: the orchestrator puts, the listener takes.
+            this.orchestrator = new AsyncOrchestrator();
+            this.asyncListener = new AsyncListener();
+        }
     }
 
-    /**
-     * Double-checked locking:
-     *   1st check (no lock)   - fast path, used on every call after the first
-     *   lock                  - only one thread may build it
-     *   2nd check (with lock) - another thread may have built it while we waited
-     *
-     * Fails with "Call LogManager.initialize(path) first" if the config isn't loaded yet.
-     */
     public static LoggerRegistry getInstance() {
         if (instance == null) {
             synchronized (LoggerRegistry.class) {
                 if (instance == null) {
-                    instance = new LoggerRegistry(
-                            ConfigManager.getInstance().get(),
-                            ShutdownManager.getInstance());
+                    instance = new LoggerRegistry(ConfigManager.getInstance().get(), ShutdownManager.getInstance());
                 }
             }
         }
@@ -62,10 +57,11 @@ public class LoggerRegistry {
         return loggers.computeIfAbsent(type.getSimpleName(), this::createLogger);
     }
 
+    public AsyncListener getAsyncListener() {
+        return asyncListener;
+    }
+
     private Logger createLogger(String name) {
-        return switch (mode) {
-            case SYNC -> new SyncLogger(name, config, shutdownManager);
-            case ASYNC -> new AsyncLogger(name, config, shutdownManager);
-        };
+        return new DefaultLoggerImplementation(name, config, shutdownManager, orchestrator, findLineNumber);
     }
 }

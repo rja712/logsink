@@ -3,7 +3,6 @@ package org.example.app;
 import org.example.logger.LogManager;
 import org.example.logger.api.Logger;
 
-/** Places orders. Needs Database. */
 public class OrderService {
 
     private final Logger log = LogManager.getInstance().getLogger(OrderService.class);
