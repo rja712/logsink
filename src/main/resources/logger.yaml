@@ -1,0 +1,42 @@
+# Logging settings for the app.
+
+# Choose either sync or async
+mode: async
+
+# Lowest level to log: DEBUG, INFO, WARN, ERROR (anything above it is logged too)
+level: INFO
+
+# Where messages go: console (default), file, db, kafka.
+# The format values are quoted because a YAML value starting with '[' is
+# otherwise read as a list, which made this file fail to parse.
+output:
+  console:
+    format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>][<message>] [<throwable trace>]'
+  file:
+    location: /resources/<time_range>
+    # seconds before the next file is started
+    time-duration: 3600
+    format: '[<time_stamp>] [<ip>] [<service_name>:<version>] [<log_level>] [<Class_name>:<LineNumber>][<message>] [<throwable trace>]'
+
+# DB and Kafka details, used only if those outputs are enabled.
+#
+# YamlFileReader already reads both, but nothing writes to them yet (see
+# TODO.md), so they are kept commented out. Uncomment a block to enable it.
+# Neither takes a 'format': a row or a message is stored as separate fields,
+# not as one line of text, so 'format' under db or kafka is rejected.
+#
+# db
+#   url   - JDBC url of the database         (required)
+#   table - table the rows are written into  (required)
+#
+#   db:
+#     url: jdbc:postgresql://localhost:5432/logs
+#     table: app_logs
+#
+# kafka
+#   brokers - comma-separated server list, e.g. localhost:9092  (required)
+#   topic   - topic the messages are sent to                    (required)
+#
+#   kafka:
+#     brokers: localhost:9092
+#     topic: app-logs
