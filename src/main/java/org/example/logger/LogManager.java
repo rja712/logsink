@@ -13,6 +13,7 @@ public final class LogManager {
 
     private final ConfigManager configManager = ConfigManager.getInstance();
     private final ShutdownManager shutdownManager = ShutdownManager.getInstance();
+    private AsyncListener listener;
 
     private LogManager() {
     }
@@ -22,14 +23,12 @@ public final class LogManager {
     }
 
     public synchronized void initialize(String yamlPath, ServiceInfo serviceInfo) {
-        configManager.load(yamlPath, serviceInfo);
 
-        LoggerRegistry registry = LoggerRegistry.getInstance();
+        configManager.loadConfiguration(yamlPath, serviceInfo);
 
-        AsyncListener listener = registry.getAsyncListener();
-        if (listener != null) {
+        if (configManager.isAsyncMode()) {
+            listener = new AsyncListener();
             listener.start();
-            shutdownManager.setAsyncListener(listener);
         }
     }
 
@@ -38,6 +37,6 @@ public final class LogManager {
     }
 
     public synchronized void shutdown() {
-        shutdownManager.shutdown();
+        shutdownManager.shutdown(listener);
     }
 }

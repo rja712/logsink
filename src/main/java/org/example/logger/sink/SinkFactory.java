@@ -26,7 +26,7 @@ public class SinkFactory {
         if (sinks == null) {
             ConfigManager configManager = ConfigManager.getInstance();
             List<Sink> built = new ArrayList<>();
-            for (OutputConfig output : configManager.get().outputs()) {
+            for (OutputConfig output : configManager.getLoggerConfig().outputs()) {
                 built.add(createSink(output, configManager.getServiceInfo()));
             }
             sinks = List.copyOf(built);

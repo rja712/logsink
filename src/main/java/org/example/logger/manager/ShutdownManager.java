@@ -9,8 +9,6 @@ public class ShutdownManager {
 
     private volatile boolean shutDown = false;
 
-    private AsyncListener asyncListener;
-
     private ShutdownManager() {
     }
 
@@ -18,11 +16,8 @@ public class ShutdownManager {
         return INSTANCE;
     }
 
-    public void setAsyncListener(AsyncListener asyncListener) {
-        this.asyncListener = asyncListener;
-    }
 
-    public void shutdown() {
+    public void shutdown(AsyncListener asyncListener) {
         if (shutDown) {
             return;
         }

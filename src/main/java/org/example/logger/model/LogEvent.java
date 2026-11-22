@@ -7,7 +7,7 @@ public record LogEvent(
         LogLevel level,
         String loggerName,
         String threadName,
-        int lineNumber,          // 0 if not looked up
+        int lineNumber,
         String message,
         Throwable throwable) {
 

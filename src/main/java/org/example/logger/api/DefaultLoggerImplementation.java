@@ -13,14 +13,12 @@ public class DefaultLoggerImplementation implements Logger {
     private final LoggerConfig config;
     private final ShutdownManager shutdownManager;
     private final Dispatcher dispatcher;
-    private final boolean findLineNumber;
 
-    public DefaultLoggerImplementation(String name, LoggerConfig config, ShutdownManager shutdownManager, Dispatcher dispatcher, boolean findLineNumber) {
+    public DefaultLoggerImplementation(String name, LoggerConfig config, ShutdownManager shutdownManager, Dispatcher dispatcher) {
         this.name = name;
         this.config = config;
         this.shutdownManager = shutdownManager;
         this.dispatcher = dispatcher;
-        this.findLineNumber = findLineNumber;
     }
 
     @Override
@@ -55,14 +53,12 @@ public class DefaultLoggerImplementation implements Logger {
 
     private void log(LogLevel level, String message, Throwable throwable) {
         if (shutdownManager.isShutDown()) {
+            System.err.println("[logger] logging is shut down, dropped: " + level + " " + name + " - " + message);
             return;
         }
-        if (!level.isAtLeast(config.level())) {
-            return;
+        if (level.isAtLeast(config.level())) {
+            int lineNumber = LineNumberUitl.find();
+            dispatcher.dispatch(LogEvent.of(level, name, lineNumber, message, throwable));
         }
-
-        int lineNumber = findLineNumber ? LineNumberUitl.find() : 0;
-
-        dispatcher.dispatch(LogEvent.of(level, name, lineNumber, message, throwable));
     }
 }

@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 public final class LineFormatterUtil {
 
-    public static final String DEFAULT_FORMAT = "<time_stamp> [<log_level>] <class_name> - <message>\n<throwable_trace>";
+    public static final String DEFAULT_FORMAT = "<time_stamp> [<thread_name>] [<log_level>] <class_name> - <message>\n<throwable_trace>";
 
     // Field names, as placeholders look after case, spaces and underscores are removed,
     // so <Class_name>, <class name> and <className> all become CLASS_NAME.
@@ -44,19 +44,6 @@ public final class LineFormatterUtil {
         while (matcher.find()) {
             fieldKey(matcher.group(1));
         }
-    }
-
-    public static boolean usesLineNumber(String format) {
-        if (format == null) {
-            return false;
-        }
-        Matcher matcher = PLACEHOLDER.matcher(format);
-        while (matcher.find()) {
-            if (matcher.group(1).toLowerCase().replaceAll("[^a-z]", "").equals(LINE_NUMBER)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static String fieldKey(String placeholder) {

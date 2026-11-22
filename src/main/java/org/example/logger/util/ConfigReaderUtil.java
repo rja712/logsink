@@ -117,7 +117,6 @@ public class ConfigReaderUtil {
         return text.substring(1, end);
     }
 
-
     private ModeConfig readMode(Map<String, String> values) {
         String text = values.get("mode");
 
@@ -217,8 +216,6 @@ public class ConfigReaderUtil {
 
             case FILE -> new FileOutputConfig(
                     required(what, settings, "location"),
-                    readTimeRange(what, settings.get("time-range")),
-                    readSize(what, settings.get("max-size")),
                     settings.get("format"));
 
             case DB -> new DbOutputConfig(
@@ -268,44 +265,6 @@ public class ConfigReaderUtil {
             throw new IllegalArgumentException(what + " needs a '" + key + "'");
         }
         return value;
-    }
-
-    // "hourly" or "daily". Left out means daily.
-    private TimeRange readTimeRange(String what, String text) {
-        if (text == null || text.isEmpty()) {
-            return TimeRange.DAILY;
-        }
-        try {
-            return TimeRange.valueOf(text.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(what + ": time-range must be one of "
-                    + Arrays.toString(TimeRange.values()) + ", got '" + text + "'");
-        }
-    }
-
-    // "500KB", "10MB", "1GB" or plain bytes -> bytes. Left out means no limit (0).
-    private long readSize(String what, String text) {
-        if (text == null || text.isEmpty()) {
-            return 0;
-        }
-        String upper = text.toUpperCase().replace(" ", "");
-        long unit = 1;
-        if (upper.endsWith("GB")) {
-            unit = 1024L * 1024 * 1024;
-        } else if (upper.endsWith("MB")) {
-            unit = 1024L * 1024;
-        } else if (upper.endsWith("KB")) {
-            unit = 1024L;
-        }
-        String number = unit == 1 ? upper.replace("B", "") : upper.substring(0, upper.length() - 2);
-        try {
-            long size = Long.parseLong(number) * unit;
-            if (size > 0) {
-                return size;
-            }
-        } catch (NumberFormatException ignored) {
-        }
-        throw new IllegalArgumentException(what + ": max-size must look like 500KB, 10MB or 1GB, got '" + text + "'");
     }
 
     private long positiveNumber(String what, Map<String, String> settings, String key, long defaultValue) {

@@ -7,8 +7,9 @@ public class AsyncDispatcher implements Dispatcher {
 
     @Override
     public void dispatch(LogEvent event) {
-        // offer, not put: never make the app wait. If the queue is full the event is dropped
-        // (accepted: async is best effort; use sync mode when every line must be kept).
-        LogQueue.getInstance().offer(event);
+        boolean accepted = LogQueue.getInstance().offer(event);
+        if (!accepted) {
+            System.err.println("[logger] queue full, dropped: " + event.level() + " " + event.loggerName() + " - " + event.message());
+        }
     }
 }

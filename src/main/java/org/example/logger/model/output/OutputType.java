@@ -5,7 +5,7 @@ import java.util.Set;
 public enum OutputType {
 
     CONSOLE("format"),
-    FILE("location", "time-range", "max-size", "format"),
+    FILE("location", "format"),
     DB("url", "table"),
     KAFKA("brokers", "topic");
 

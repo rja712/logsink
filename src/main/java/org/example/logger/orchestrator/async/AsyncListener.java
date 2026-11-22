@@ -14,8 +14,6 @@ public final class AsyncListener implements Runnable {
     private final List<Sink> sinks = SinkFactory.getInstance().getSinks();
     private final Thread thread = new Thread(this, "logger-async-listener");
 
-    private volatile boolean running = true;
-
     public AsyncListener() {
         // Daemon: the JVM can exit even if shutdown() was never called.
         // TODO: add a JVM shutdown hook that calls shutdown(), so queued events aren't lost then.
@@ -27,29 +25,32 @@ public final class AsyncListener implements Runnable {
     }
 
     public void stop() {
-        running = false;
         try {
+            LogQueue.getInstance().put(LogQueue.POISON_PILL);
             thread.join(STOP_WAIT_MILLIS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+
+        if (thread.isAlive()) {
+            thread.interrupt();
+            System.err.println("[logger] listener did not finish in " + STOP_WAIT_MILLIS + " ms, stopped it; " + LogQueue.getInstance().size() + " events not written");
         }
     }
 
     @Override
     public void run() {
-        while (running) {
+        while (true) {
+            LogEvent event;
             try {
-                LogEvent event = LogQueue.getInstance().poll(100, TimeUnit.MILLISECONDS);
-                if (event != null) {
-                    writeToSinks(event);
-                }
+                event = LogQueue.getInstance().take();
             } catch (InterruptedException e) {
-                break;
+                return;
             }
-        }
 
-        LogEvent event;
-        while ((event = LogQueue.getInstance().poll()) != null) {
+            if (event == LogQueue.POISON_PILL) {
+                return;
+            }
             writeToSinks(event);
         }
     }

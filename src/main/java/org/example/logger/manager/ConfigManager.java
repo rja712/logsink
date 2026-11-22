@@ -1,6 +1,8 @@
 package org.example.logger.manager;
 
 import org.example.logger.model.LoggerConfig;
+import org.example.logger.model.Mode;
+import org.example.logger.model.mode.AsyncModeConfig;
 import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.util.ConfigReaderUtil;
 
@@ -22,7 +24,7 @@ public class ConfigManager {
         return INSTANCE;
     }
 
-    public void load(String yamlPath, ServiceInfo serviceInfo) {
+    public void loadConfiguration(String yamlPath, ServiceInfo serviceInfo) {
         if (config != null) {
             throw new IllegalStateException("Logging is already initialized");
         }
@@ -34,15 +36,22 @@ public class ConfigManager {
         this.serviceInfo = serviceInfo != null ? serviceInfo : new ServiceInfo(null, null, null);
     }
 
-    public LoggerConfig get() {
+    public LoggerConfig getLoggerConfig() {
         if (config == null) {
             throw new IllegalStateException("Call LogManager.initialize(path, serviceInfo) first");
         }
         return config;
     }
 
+    public boolean isAsyncMode() {
+        return getLoggerConfig().mode().type() == Mode.ASYNC;
+    }
+
+    public int getQueueSize() {
+        return ((AsyncModeConfig) getLoggerConfig().mode()).queueSize();
+    }
+
     public ServiceInfo getServiceInfo() {
-        get();
         return serviceInfo;
     }
 }

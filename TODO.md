@@ -22,18 +22,18 @@ Each item is also marked `// TODO` in the code where it belongs.
 ## sinks (destinations) — `sink/`
 - [x] `Sink` interface and `SinkFactory` (builds the list once)
 - [x] `ConsoleSink` and `FileSink`; `SinkFactory` builds one per output, each with its own format
-- [x] `FileSink`: new file per hour/day (`time-range`), moves a full file to a backup (`max-size`)
-- [ ] `max-backups` setting, to delete the oldest backups (`sink/FileSink`)
+- [x] `FileSink`: appends every line to one file (`location`); no rotation or backups
 - [ ] `DbSink` and `KafkaSink` (`SinkFactory` fails at startup for db/kafka until then)
 - [x] Delete the temporary `sink/PrintSink`
 - [x] Add `close()` to `Sink`
 
 ## shutdown() — `manager/ShutdownManager`
-- [x] Write out any messages still waiting in the queue (async)
+- [x] Async: poison pill at the end of the queue; listener writes everything before it, then stops
+- [x] Async: if the listener doesn't stop within 5 s, interrupt it and report unwritten events
 - [x] Close the sinks (`SinkFactory.closeAll()`)
 
 ## config — `manager/model/LoggerConfig`, `util/YamlFileReader`, `src/main/resources/logger.yaml`
-- [x] Add settings: mode, level, outputs (console, file) with format, location, time-duration
+- [x] Add settings: mode, level, outputs (console, file) with format and location
 - [x] Output type is an enum (`manager/model/output/OutputType`); each type has its own config class
 - [x] Support nested sections in `YamlFileReader`
 - [x] `mode` is a section: `type` picks sync or async, each with its own settings
