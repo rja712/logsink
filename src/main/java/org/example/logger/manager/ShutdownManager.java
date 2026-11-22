@@ -1,5 +1,6 @@
 package org.example.logger.manager;
 
+import org.example.logger.orchestrator.async.AsyncDispatcher;
 import org.example.logger.orchestrator.async.AsyncListener;
 import org.example.logger.sink.SinkFactory;
 
@@ -16,8 +17,7 @@ public class ShutdownManager {
         return INSTANCE;
     }
 
-
-    public void shutdown() {
+    public synchronized void shutdown() {
         if (shutDown) {
             return;
         }

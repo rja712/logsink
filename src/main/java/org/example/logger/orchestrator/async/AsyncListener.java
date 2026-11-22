@@ -42,8 +42,8 @@ public final class AsyncListener implements Runnable {
 
     public void stop() {
         try {
-            LogQueue.safePut(LogEvent.getPoisonPill());
-            asyncListenerThread.join(stopWaitMillis);
+            LogQueue.getInstance().put(LogEvent.getPoisonPill());
+            asyncListenerThread.join(stopWaitMillis); // Joins asyncListenerThread with the main app thread
         } catch (InterruptedException e) {
             System.err.println("[logger] listener did not finish shutdown: main thread interrupted " + e.getMessage());
             Thread.currentThread().interrupt();
@@ -54,16 +54,21 @@ public final class AsyncListener implements Runnable {
             System.err.println("[logger] listener did not finish in " + stopWaitMillis + " ms, stopped it");
         }
 
-        if (LogQueue.size() > 0){
-            System.err.println("[logger] logging is shut down, dropped: " + LogQueue.size() + " log lines");
+        if (!LogQueue.getInstance().isEmpty()){
+            System.err.println("[logger] logging is shut down, dropped: " + LogQueue.getInstance().size() + " log lines");
         }
     }
 
     @Override
     public void run() {
         while (true) {
-            LogEvent event = LogQueue.safeTake();
-            if (event == null || LogEvent.isPoisonPill(event)) {
+            LogEvent event;
+            try {
+                event = LogQueue.getInstance().take();
+            } catch (InterruptedException e) {
+                return;
+            }
+            if (LogEvent.isPoisonPill(event)) {
                 return;
             }
             writeToSinks(event);

@@ -29,7 +29,7 @@ public class LoggerRegistry {
         if (config.mode().type() == Mode.SYNC) {
             this.dispatcher = new SyncDispatcher();
         } else {
-            this.dispatcher = new AsyncDispatcher();
+            this.dispatcher = AsyncDispatcher.getInstance();
         }
     }
 
