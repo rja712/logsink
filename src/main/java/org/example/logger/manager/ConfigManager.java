@@ -43,12 +43,11 @@ public class ConfigManager {
         return config;
     }
 
-    public boolean isAsyncMode() {
-        return getLoggerConfig().mode().type() == Mode.ASYNC;
-    }
-
-    public int getQueueSize() {
-        return ((AsyncModeConfig) getLoggerConfig().mode()).queueSize();
+   public AsyncModeConfig getAsyncConfig() {
+        if (getLoggerConfig().mode().type() == Mode.ASYNC) {
+            return (AsyncModeConfig) getLoggerConfig().mode();
+        }
+        return null;
     }
 
     public ServiceInfo getServiceInfo() {

@@ -11,9 +11,12 @@ mode:
     # Settings will go here when there are any.
 
   async:
-    # How many messages the queue holds before the app's thread has to wait for
-    # the background thread to catch up. Left out means 10000.
+    # How many messages the queue holds. When it's full, new messages are dropped
+    # (reported on stderr); the app never waits. Left out means 10000.
     queue-size: 10000
+    # How long shutdown waits (milliseconds) for the queue to be written out before
+    # it stops the listener; anything left is reported as dropped. Left out means 5000.
+    shutdown-timeout-ms: 5000
 
 # Lowest level to log: DEBUG, INFO, WARN, ERROR (anything above it is logged too)
 level: INFO

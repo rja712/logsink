@@ -5,7 +5,7 @@ import java.util.Set;
 public enum Mode {
 
     SYNC(),
-    ASYNC("queue-size");
+    ASYNC("queue-size", "shutdown-timeout-ms");
 
     private final Set<String> allowedSettings;
 

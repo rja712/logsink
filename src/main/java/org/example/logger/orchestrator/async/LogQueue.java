@@ -8,9 +8,6 @@ import java.util.concurrent.BlockingQueue;
 
 public final class LogQueue {
 
-     public static final LogEvent POISON_PILL = new LogEvent(null, null, "POISON_PILL", null, 0, null, null);
-
-    // volatile so every thread sees the fully built queue once it's set.
     private static volatile BlockingQueue<LogEvent> queue;
 
     private LogQueue() {
@@ -20,7 +17,7 @@ public final class LogQueue {
         if (queue == null) {
             synchronized (LogQueue.class) {
                 if (queue == null) {
-                    queue = new ArrayBlockingQueue<>(ConfigManager.getInstance().getQueueSize());
+                    queue = new ArrayBlockingQueue<>(ConfigManager.getInstance().getAsyncConfig().queueSize());
                 }
             }
         }

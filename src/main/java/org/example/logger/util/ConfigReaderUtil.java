@@ -143,11 +143,15 @@ public class ConfigReaderUtil {
     private ModeConfig readModeConfig(Mode type, Map<String, String> settings) {
         return switch (type) {
             case SYNC -> new SyncModeConfig();
-
-            case ASYNC -> new AsyncModeConfig(
-                    positiveInt("Mode '" + type + "'", settings, "queue-size",
-                            AsyncModeConfig.DEFAULT_QUEUE_SIZE));
+            case ASYNC -> readAsyncMode(settings);
         };
+    }
+
+    private AsyncModeConfig readAsyncMode(Map<String, String> settings) {
+        String what = "Mode 'ASYNC'";
+        int queueSize = positiveInt(what, settings, "queue-size", AsyncModeConfig.DEFAULT_QUEUE_SIZE);
+        int timeout = positiveInt(what, settings, "shutdown-timeout-ms", AsyncModeConfig.DEFAULT_SHUTDOWN_TIMEOUT_MILLIS);
+        return new AsyncModeConfig(queueSize, timeout);
     }
 
     private Mode readModeType(String text) {
@@ -178,8 +182,7 @@ public class ConfigReaderUtil {
         try {
             return LogLevel.valueOf(text.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Unknown level '" + text + "'. Use one of "
-                    + Arrays.toString(LogLevel.values()));
+            throw new IllegalArgumentException("Unknown level '" + text + "'. Use one of " + Arrays.toString(LogLevel.values()));
         }
     }
 
@@ -209,7 +212,6 @@ public class ConfigReaderUtil {
     private OutputConfig readOutput(OutputType type, Map<String, String> settings) {
         String what = "Output '" + type + "'";
 
-        // TODO: check the format text once the formatter exists
         return switch (type) {
             case CONSOLE -> new ConsoleOutputConfig(
                     settings.get("format"));
@@ -232,8 +234,7 @@ public class ConfigReaderUtil {
         try {
             return OutputType.valueOf(name.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Unknown output '" + name + "'. Use one of "
-                    + Arrays.toString(OutputType.values()));
+            throw new IllegalArgumentException("Unknown output '" + name + "'. Use one of " + Arrays.toString(OutputType.values()));
         }
     }
 
@@ -249,12 +250,10 @@ public class ConfigReaderUtil {
 
     // The checks below are shared by outputs and modes, so "what" is the subject
     // of the message, e.g. "Output 'FILE'" or "Mode 'ASYNC'".
-
     private void checkSettingsAllowed(String what, Set<String> allowed, Map<String, String> settings) {
         for (String key : settings.keySet()) {
             if (!allowed.contains(key)) {
-                throw new IllegalArgumentException(what + " doesn't use '" + key
-                        + "'. It uses: " + allowed);
+                throw new IllegalArgumentException(what + " doesn't use '" + key + "'. It uses: " + allowed);
             }
         }
     }
@@ -267,28 +266,20 @@ public class ConfigReaderUtil {
         return value;
     }
 
-    private long positiveNumber(String what, Map<String, String> settings, String key, long defaultValue) {
+    // The setting as a whole number above 0, or the default if it's left out.
+    private int positiveInt(String what, Map<String, String> settings, String key, int defaultValue) {
         String value = settings.get(key);
         if (value == null || value.isEmpty()) {
             return defaultValue;
         }
         try {
-            long number = Long.parseLong(value);
+            int number = Integer.parseInt(value);
             if (number > 0) {
                 return number;
             }
         } catch (NumberFormatException ignored) {
+            // falls through to the error below
         }
-        throw new IllegalArgumentException(what + ": " + key
-                + " must be a positive number, got '" + value + "'");
-    }
-
-    private int positiveInt(String what, Map<String, String> settings, String key, int defaultValue) {
-        long number = positiveNumber(what, settings, key, defaultValue);
-        if (number > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException(what + ": " + key
-                    + " must not be more than " + Integer.MAX_VALUE + ", got " + number);
-        }
-        return (int) number;
+        throw new IllegalArgumentException(what + ": " + key + " must be a positive number, got '" + value + "'");
     }
 }

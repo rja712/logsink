@@ -13,7 +13,6 @@ public final class LogManager {
 
     private final ConfigManager configManager = ConfigManager.getInstance();
     private final ShutdownManager shutdownManager = ShutdownManager.getInstance();
-    private AsyncListener listener;
 
     private LogManager() {
     }
@@ -26,9 +25,8 @@ public final class LogManager {
 
         configManager.loadConfiguration(yamlPath, serviceInfo);
 
-        if (configManager.isAsyncMode()) {
-            listener = new AsyncListener();
-            listener.start();
+        if (configManager.getAsyncConfig() != null) {
+            AsyncListener.start();
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "logger-shutdown-hook"));

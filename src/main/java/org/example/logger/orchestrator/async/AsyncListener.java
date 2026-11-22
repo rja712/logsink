@@ -1,40 +1,43 @@
 package org.example.logger.orchestrator.async;
 
+import org.example.logger.manager.ConfigManager;
 import org.example.logger.model.LogEvent;
 import org.example.logger.sink.Sink;
 import org.example.logger.sink.SinkFactory;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public final class AsyncListener implements Runnable {
-
-    private static final long STOP_WAIT_MILLIS = 5_000;
 
     private final List<Sink> sinks = SinkFactory.getInstance().getSinks();
     private final Thread thread = new Thread(this, "logger-async-listener");
 
-    public AsyncListener() {
-        // Daemon: never stops the app from exiting. The shutdown hook in LogManager
-        // still writes out the queue before the JVM stops.
+    private AsyncListener() {
         thread.setDaemon(true);
     }
 
-    public void start() {
+    public static void start() {
         thread.start();
     }
 
     public void stop() {
+
+        long stopWaitMillis = ConfigManager.getInstance().getAsyncConfig().shutdownTimeoutMillis();
+
         try {
-            LogQueue.getInstance().put(LogQueue.POISON_PILL);
-            thread.join(STOP_WAIT_MILLIS);
+            LogQueue.getInstance().put(LogEvent.poisonPill());
+            thread.join(stopWaitMillis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
         if (thread.isAlive()) {
             thread.interrupt();
-            System.err.println("[logger] listener did not finish in " + STOP_WAIT_MILLIS + " ms, stopped it; " + LogQueue.getInstance().size() + " events not written");
+            System.err.println("[logger] listener did not finish in " + stopWaitMillis + " ms, stopped it");
+        }
+
+        if (!LogQueue.getInstance().isEmpty()){
+            System.err.println("[logger] logging is shut down, dropped: " + LogQueue.getInstance().size() + " log lines");
         }
     }
 
@@ -48,7 +51,7 @@ public final class AsyncListener implements Runnable {
                 return;
             }
 
-            if (event == LogQueue.POISON_PILL) {
+            if (LogEvent.isPoisonPill(event)) {
                 return;
             }
             writeToSinks(event);
