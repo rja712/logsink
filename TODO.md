@@ -8,7 +8,7 @@ Each item is also marked `// TODO` in the code where it belongs.
 - [x] Pick SyncOrchestrator or AsyncOrchestrator from "mode", once (`manager/LoggerRegistry`)
 - [x] If mode is async, start the background thread that empties the queue (`dispatcher/AsyncListener`)
 - [x] Create the formatter (how a line looks) from the output's `format` (`util/LineFormatter`)
-- [ ] JVM shutdown hook that calls shutdown(), so queued events aren't lost if the app forgets (`dispatcher/AsyncListener`)
+- [x] JVM shutdown hook that calls shutdown(), so queued events aren't lost if the app forgets (`LogManager.initialize()`)
 
 ## logging a message — `api/impl/DefaultLogger`, `dispatcher/`
 - [x] One logger (`DefaultLogger`); sync/async is decided by the `Orchestrator` picked from "mode"

@@ -30,6 +30,8 @@ public final class LogManager {
             listener = new AsyncListener();
             listener.start();
         }
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "logger-shutdown-hook"));
     }
 
     public Logger getLogger(Class<?> type) {

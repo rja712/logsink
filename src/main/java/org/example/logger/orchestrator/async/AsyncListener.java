@@ -15,8 +15,8 @@ public final class AsyncListener implements Runnable {
     private final Thread thread = new Thread(this, "logger-async-listener");
 
     public AsyncListener() {
-        // Daemon: the JVM can exit even if shutdown() was never called.
-        // TODO: add a JVM shutdown hook that calls shutdown(), so queued events aren't lost then.
+        // Daemon: never stops the app from exiting. The shutdown hook in LogManager
+        // still writes out the queue before the JVM stops.
         thread.setDaemon(true);
     }
 
