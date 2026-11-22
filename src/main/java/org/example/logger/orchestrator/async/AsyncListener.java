@@ -6,6 +6,7 @@ import org.example.logger.sink.Sink;
 import org.example.logger.sink.SinkFactory;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public final class AsyncListener implements Runnable {
 
@@ -42,7 +43,10 @@ public final class AsyncListener implements Runnable {
 
     public void stop() {
         try {
-            LogQueue.getInstance().put(LogEvent.getPoisonPill());
+            boolean stopSignalAdded = LogQueue.getInstance().offer(LogEvent.getPoisonPill(), stopWaitMillis, TimeUnit.MILLISECONDS);
+            if (!stopSignalAdded) {
+                System.err.println("[logger] could not add stop signal, queue is full");
+            }
             asyncListenerThread.join(stopWaitMillis); // Joins asyncListenerThread with the main app thread
         } catch (InterruptedException e) {
             System.err.println("[logger] listener did not finish shutdown: main thread interrupted " + e.getMessage());
@@ -79,8 +83,8 @@ public final class AsyncListener implements Runnable {
         for (Sink sink : sinks) {
             try {
                 sink.write(event);
-            } catch (RuntimeException e) {
-                System.err.println("[logger] sink " + sink.getClass().getSimpleName() + " failed: " + e);
+            } catch (Throwable t) {
+                System.err.println("[logger] sink " + sink.getClass().getSimpleName() + " failed: " + t);
             }
         }
     }

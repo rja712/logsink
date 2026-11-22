@@ -11,13 +11,11 @@ public class DefaultLoggerImplementation implements Logger {
 
     private final String name;
     private final LoggerConfig config;
-    private final ShutdownManager shutdownManager;
     private final Dispatcher dispatcher;
 
     public DefaultLoggerImplementation(String name, LoggerConfig config, ShutdownManager shutdownManager, Dispatcher dispatcher) {
         this.name = name;
         this.config = config;
-        this.shutdownManager = shutdownManager;
         this.dispatcher = dispatcher;
     }
 
@@ -52,15 +50,9 @@ public class DefaultLoggerImplementation implements Logger {
     }
 
     private void log(LogLevel level, String message, Throwable throwable) {
-        if (shutdownManager.isShutDown()) {
-            System.err.println("[logger] logging is shut down, dropped: " + level + " " + name + " - " + message);
-            return;
+        if (level.isAtLeast(config.level())) {
+            LogEvent logEvent = LogEvent.of(level, name, LineNumberUitl.find(), message, throwable);
+            dispatcher.dispatch(logEvent);
         }
-        if (!level.isAtLeast(config.level())) {
-            return;
-        }
-
-        LogEvent logEvent = LogEvent.of(level, name, LineNumberUitl.find(), message, throwable);
-        dispatcher.dispatch(logEvent);
     }
 }
