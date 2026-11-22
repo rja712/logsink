@@ -1,6 +1,6 @@
 package org.example.logger.manager;
 
-import org.example.logger.api.ServiceInfo;
+import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.model.LoggerConfig;
 import org.example.logger.util.ConfigReaderUtil;
 

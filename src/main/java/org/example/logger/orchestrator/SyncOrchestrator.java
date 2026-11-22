@@ -6,6 +6,8 @@ import org.example.logger.sink.SinkFactory;
 
 import java.util.List;
 
+// Sync mode: the app's own thread writes the event to every sink, one after another,
+// and returns only when all of them are done.
 public class SyncOrchestrator implements Orchestrator {
 
     private final List<Sink> sinks = SinkFactory.getInstance().getSinks();

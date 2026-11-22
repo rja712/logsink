@@ -2,7 +2,7 @@ package org.example.app;
 
 import org.example.logger.LogManager;
 import org.example.logger.api.Logger;
-import org.example.logger.api.ServiceInfo;
+import org.example.logger.model.mode.ServiceInfo;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

@@ -1,6 +1,6 @@
 package org.example.logger.util;
 
-import org.example.logger.api.ServiceInfo;
+import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.model.LogEvent;
 
 import java.io.PrintWriter;

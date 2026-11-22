@@ -1,6 +1,6 @@
 package org.example.logger.sink;
 
-import org.example.logger.api.ServiceInfo;
+import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.manager.ConfigManager;
 import org.example.logger.model.output.FileOutputConfig;
 import org.example.logger.model.output.OutputConfig;

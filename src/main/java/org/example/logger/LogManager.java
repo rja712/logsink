@@ -1,7 +1,7 @@
 package org.example.logger;
 
 import org.example.logger.api.Logger;
-import org.example.logger.api.ServiceInfo;
+import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.manager.ConfigManager;
 import org.example.logger.manager.LoggerRegistry;
 import org.example.logger.manager.ShutdownManager;

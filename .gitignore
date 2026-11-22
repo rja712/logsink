@@ -36,3 +36,5 @@ build/
 
 ### Mac OS ###
 .DS_Store
+### App log output (logger.yaml file location) ###
+out/

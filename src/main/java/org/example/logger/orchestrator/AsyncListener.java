@@ -5,6 +5,7 @@ import org.example.logger.sink.Sink;
 import org.example.logger.sink.SinkFactory;
 
 import java.util.List;
+
 import java.util.concurrent.TimeUnit;
 
 public final class AsyncListener implements Runnable {
@@ -56,6 +57,7 @@ public final class AsyncListener implements Runnable {
         }
     }
 
+    // One sink after another, in queue order.
     private void writeToSinks(LogEvent event) {
         for (Sink sink : sinks) {
             try {
