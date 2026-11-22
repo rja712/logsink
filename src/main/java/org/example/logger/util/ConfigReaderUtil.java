@@ -6,28 +6,14 @@ import org.example.logger.model.Mode;
 import org.example.logger.model.mode.AsyncModeConfig;
 import org.example.logger.model.mode.ModeConfig;
 import org.example.logger.model.mode.SyncModeConfig;
-import org.example.logger.model.output.ConsoleOutputConfig;
-import org.example.logger.model.output.DbOutputConfig;
-import org.example.logger.model.output.FileOutputConfig;
-import org.example.logger.model.output.KafkaOutputConfig;
-import org.example.logger.model.output.OutputConfig;
-import org.example.logger.model.output.OutputType;
-import org.example.logger.model.output.TimeRange;
+import org.example.logger.model.output.*;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Deque;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class ConfigReaderUtil {
 
@@ -41,16 +27,12 @@ public class ConfigReaderUtil {
         return new LoggerConfig(mode, level, outputs);
     }
 
-    // ------------------------------------------------------------------
-    // Step 1: file -> flat key/value map
-    //
     //   level: INFO                 ->  "level"                = "INFO"
     //   output:                     ->  "output"               = ""
     //     file:                     ->  "output.file"          = ""
     //       location: /logs         ->  "output.file.location" = "/logs"
     //
     // TODO: support lists ("- item") if the config ever needs them.
-    // ------------------------------------------------------------------
 
     private Map<String, String> readKeyValues(Path file) {
         List<String> lines = readLines(file);
@@ -67,7 +49,7 @@ public class ConfigReaderUtil {
             int lineNumber = i + 1;
 
             if (line.isEmpty() || line.startsWith("#")) {
-                continue;   // skip blank lines and comments
+                continue;
             }
 
             int indent = raw.indexOf(line);
@@ -92,7 +74,6 @@ public class ConfigReaderUtil {
                     ? readQuoted(rest, file, lineNumber)
                     : removeTrailingComment(rest).strip();
 
-            // Leave the sections this line is not inside of (same or smaller indent).
             while (!sectionIndents.isEmpty() && sectionIndents.peek() >= indent) {
                 sectionIndents.pop();
                 sectionKeys.pop();
@@ -136,9 +117,6 @@ public class ConfigReaderUtil {
         return text.substring(1, end);
     }
 
-    // ------------------------------------------------------------------
-    // Step 2: map -> LoggerConfig
-    // ------------------------------------------------------------------
 
     private ModeConfig readMode(Map<String, String> values) {
         String text = values.get("mode");
@@ -150,7 +128,6 @@ public class ConfigReaderUtil {
             return readModeConfig(readModeType(text), Map.of());
         }
 
-        // "mode:" opened a section, so "type" has to say which mode is in use.
         String typeText = values.get("mode.type");
         if (typeText == null || typeText.isEmpty()) {
             throw new IllegalArgumentException("The 'mode' section needs a 'type'. Use sync or async");
@@ -208,7 +185,6 @@ public class ConfigReaderUtil {
     }
 
     private List<OutputConfig> readOutputs(Map<String, String> values) {
-        // 1. find the names directly under "output" (console, file, ...)
         Set<String> names = new LinkedHashSet<>();
         for (String key : values.keySet()) {
             if (key.startsWith("output.")) {
@@ -218,10 +194,9 @@ public class ConfigReaderUtil {
         }
 
         if (names.isEmpty()) {
-            return List.of(new ConsoleOutputConfig(null));   // default
+            return List.of(new ConsoleOutputConfig(null));
         }
 
-        // 2. build one config object per name
         List<OutputConfig> outputs = new ArrayList<>();
         for (String name : names) {
             OutputType type = readOutputType(name);
@@ -329,7 +304,6 @@ public class ConfigReaderUtil {
                 return size;
             }
         } catch (NumberFormatException ignored) {
-            // falls through to the error below
         }
         throw new IllegalArgumentException(what + ": max-size must look like 500KB, 10MB or 1GB, got '" + text + "'");
     }
@@ -345,7 +319,6 @@ public class ConfigReaderUtil {
                 return number;
             }
         } catch (NumberFormatException ignored) {
-            // falls through to the error below
         }
         throw new IllegalArgumentException(what + ": " + key
                 + " must be a positive number, got '" + value + "'");

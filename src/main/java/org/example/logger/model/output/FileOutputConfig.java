@@ -1,9 +1,9 @@
 package org.example.logger.model.output;
 
 public record FileOutputConfig(
-        String location,       // file path; <time_range> in it is replaced by the hour or day
+        String location,
         TimeRange timeRange,
-        long maxSizeBytes,     // 0 = no size limit
+        long maxSizeBytes,
         String format) implements OutputConfig {
 
     @Override

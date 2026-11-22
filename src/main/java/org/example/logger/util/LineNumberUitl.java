@@ -2,7 +2,6 @@ package org.example.logger.util;
 
 public final class LineNumberUitl {
 
-    // Every class of the library lives under this package.
     private static final String LIBRARY_PACKAGE = "org.example.logger.";
 
     private static final StackWalker WALKER = StackWalker.getInstance();

@@ -1,7 +1,7 @@
 package org.example.logger.sink;
 
-import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.manager.ConfigManager;
+import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.model.output.FileOutputConfig;
 import org.example.logger.model.output.OutputConfig;
 import org.example.logger.util.LineFormatterUtil;
@@ -22,7 +22,6 @@ public class SinkFactory {
         return INSTANCE;
     }
 
-    // Built once, on first use: one sink per output in the YAML.
     public synchronized List<Sink> getSinks() {
         if (sinks == null) {
             ConfigManager configManager = ConfigManager.getInstance();
@@ -34,8 +33,8 @@ public class SinkFactory {
         }
         return sinks;
     }
+
     private Sink createSink(OutputConfig output, ServiceInfo serviceInfo) {
-        // Each output gets its own formatter, from its own "format" in the YAML.
         LineFormatterUtil formatter = new LineFormatterUtil(output.format(), serviceInfo);
 
         return switch (output.type()) {
@@ -46,7 +45,6 @@ public class SinkFactory {
     }
 
 
-    // Called at shutdown. Does nothing if the sinks were never built.
     public synchronized void closeAll() {
         if (sinks == null) {
             return;

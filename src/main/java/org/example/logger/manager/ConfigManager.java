@@ -1,7 +1,7 @@
 package org.example.logger.manager;
 
-import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.model.LoggerConfig;
+import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.util.ConfigReaderUtil;
 
 import java.nio.file.Path;
@@ -12,8 +12,8 @@ public class ConfigManager {
 
     private final ConfigReaderUtil yamlReader = new ConfigReaderUtil();
 
-    private LoggerConfig config;          // from the YAML file
-    private ServiceInfo serviceInfo;      // from the app
+    private LoggerConfig config;
+    private ServiceInfo serviceInfo;
 
     private ConfigManager() {
     }
@@ -42,7 +42,7 @@ public class ConfigManager {
     }
 
     public ServiceInfo getServiceInfo() {
-        get();   // same "initialize first" check
+        get();
         return serviceInfo;
     }
 }

@@ -4,7 +4,7 @@ import org.example.logger.manager.ShutdownManager;
 import org.example.logger.model.LogEvent;
 import org.example.logger.model.LogLevel;
 import org.example.logger.model.LoggerConfig;
-import org.example.logger.orchestrator.Orchestrator;
+import org.example.logger.orchestrator.Dispatcher;
 import org.example.logger.util.LineNumberUitl;
 
 public class DefaultLoggerImplementation implements Logger {
@@ -12,14 +12,14 @@ public class DefaultLoggerImplementation implements Logger {
     private final String name;
     private final LoggerConfig config;
     private final ShutdownManager shutdownManager;
-    private final Orchestrator orchestrator;
-    private final boolean findLineNumber;   // true only if some format uses <line_number>
+    private final Dispatcher dispatcher;
+    private final boolean findLineNumber;
 
-    public DefaultLoggerImplementation(String name, LoggerConfig config, ShutdownManager shutdownManager, Orchestrator orchestrator, boolean findLineNumber) {
+    public DefaultLoggerImplementation(String name, LoggerConfig config, ShutdownManager shutdownManager, Dispatcher dispatcher, boolean findLineNumber) {
         this.name = name;
         this.config = config;
         this.shutdownManager = shutdownManager;
-        this.orchestrator = orchestrator;
+        this.dispatcher = dispatcher;
         this.findLineNumber = findLineNumber;
     }
 
@@ -55,16 +55,14 @@ public class DefaultLoggerImplementation implements Logger {
 
     private void log(LogLevel level, String message, Throwable throwable) {
         if (shutdownManager.isShutDown()) {
-            return;     // shut down: ignore
+            return;
         }
         if (!level.isAtLeast(config.level())) {
-            return;     // below the configured level: ignore
+            return;
         }
 
-        // Must happen here, on the app's thread: in async mode the app's stack is gone
-        // by the time the background thread writes the event.
         int lineNumber = findLineNumber ? LineNumberUitl.find() : 0;
 
-        orchestrator.dispatch(LogEvent.of(level, name, lineNumber, message, throwable));
+        dispatcher.dispatch(LogEvent.of(level, name, lineNumber, message, throwable));
     }
 }

@@ -6,11 +6,11 @@ Each item is also marked `// TODO` in the code where it belongs.
 ## initialize(yamlPath) — `LogManager`, `manager/ConfigManager`
 - [x] Read mode, level and outputs in `ConfigManager.load()`
 - [x] Pick SyncOrchestrator or AsyncOrchestrator from "mode", once (`manager/LoggerRegistry`)
-- [x] If mode is async, start the background thread that empties the queue (`orchestrator/AsyncListener`)
+- [x] If mode is async, start the background thread that empties the queue (`dispatcher/AsyncListener`)
 - [x] Create the formatter (how a line looks) from the output's `format` (`util/LineFormatter`)
-- [ ] JVM shutdown hook that calls shutdown(), so queued events aren't lost if the app forgets (`orchestrator/AsyncListener`)
+- [ ] JVM shutdown hook that calls shutdown(), so queued events aren't lost if the app forgets (`dispatcher/AsyncListener`)
 
-## logging a message — `api/impl/DefaultLogger`, `orchestrator/`
+## logging a message — `api/impl/DefaultLogger`, `dispatcher/`
 - [x] One logger (`DefaultLogger`); sync/async is decided by the `Orchestrator` picked from "mode"
 - [x] sync: `SyncOrchestrator` → every sink, one by one, on the caller's thread
 - [x] async: `AsyncOrchestrator` → BlockingQueue → `AsyncListener` (background thread) → every sink

@@ -1,11 +1,11 @@
 package org.example.logger;
 
 import org.example.logger.api.Logger;
-import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.manager.ConfigManager;
 import org.example.logger.manager.LoggerRegistry;
 import org.example.logger.manager.ShutdownManager;
-import org.example.logger.orchestrator.AsyncListener;
+import org.example.logger.model.mode.ServiceInfo;
+import org.example.logger.orchestrator.async.AsyncListener;
 
 public final class LogManager {
 
@@ -24,10 +24,8 @@ public final class LogManager {
     public synchronized void initialize(String yamlPath, ServiceInfo serviceInfo) {
         configManager.load(yamlPath, serviceInfo);
 
-        // Build the registry now, so sync/async is fixed at startup.
         LoggerRegistry registry = LoggerRegistry.getInstance();
 
-        // Async mode: start the background thread, and tell ShutdownManager about it.
         AsyncListener listener = registry.getAsyncListener();
         if (listener != null) {
             listener.start();

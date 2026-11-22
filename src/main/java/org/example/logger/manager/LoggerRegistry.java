@@ -1,13 +1,13 @@
 package org.example.logger.manager;
 
-import org.example.logger.api.Logger;
 import org.example.logger.api.DefaultLoggerImplementation;
+import org.example.logger.api.Logger;
 import org.example.logger.model.LoggerConfig;
 import org.example.logger.model.Mode;
-import org.example.logger.orchestrator.AsyncListener;
-import org.example.logger.orchestrator.AsyncOrchestrator;
-import org.example.logger.orchestrator.Orchestrator;
-import org.example.logger.orchestrator.SyncOrchestrator;
+import org.example.logger.orchestrator.Dispatcher;
+import org.example.logger.orchestrator.async.AsyncDispatcher;
+import org.example.logger.orchestrator.async.AsyncListener;
+import org.example.logger.orchestrator.sync.SyncDispatcher;
 import org.example.logger.util.LineFormatterUtil;
 
 import java.util.Map;
@@ -22,9 +22,9 @@ public class LoggerRegistry {
     private final LoggerConfig config;
     private final ShutdownManager shutdownManager;
 
-    private final Orchestrator orchestrator;    // fixed for the life of the registry
-    private final AsyncListener asyncListener;  // only in async mode; null in sync mode
-    private final boolean findLineNumber;       // looking it up costs time, so only if a format uses it
+    private final Dispatcher dispatcher;
+    private final AsyncListener asyncListener;
+    private final boolean findLineNumber;
 
     private LoggerRegistry(LoggerConfig config, ShutdownManager shutdownManager) {
         this.config = config;
@@ -33,11 +33,10 @@ public class LoggerRegistry {
                 .anyMatch(output -> LineFormatterUtil.usesLineNumber(output.format()));
 
         if (config.mode().type() == Mode.SYNC) {
-            this.orchestrator = new SyncOrchestrator();
+            this.dispatcher = new SyncDispatcher();
             this.asyncListener = null;
         } else {
-            // Both use the one shared LogQueue: the orchestrator puts, the listener takes.
-            this.orchestrator = new AsyncOrchestrator();
+            this.dispatcher = new AsyncDispatcher();
             this.asyncListener = new AsyncListener();
         }
     }
@@ -62,6 +61,6 @@ public class LoggerRegistry {
     }
 
     private Logger createLogger(String name) {
-        return new DefaultLoggerImplementation(name, config, shutdownManager, orchestrator, findLineNumber);
+        return new DefaultLoggerImplementation(name, config, shutdownManager, dispatcher, findLineNumber);
     }
 }

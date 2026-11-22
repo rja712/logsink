@@ -15,9 +15,6 @@ import java.time.LocalDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// Writes each event as one line to a file.
-//   - <time_range> in the location is replaced by the hour or day, so a new file starts every hour/day.
-//   - When a file reaches max-size it is moved to a backup (name.1, name.2, ...) and a fresh file starts.
 public class FileSink implements Sink {
 
     private static final Pattern TIME_RANGE = Pattern.compile("<time[_ ]?range>", Pattern.CASE_INSENSITIVE);
@@ -25,9 +22,9 @@ public class FileSink implements Sink {
     private final FileOutputConfig config;
     private final LineFormatterUtil formatter;
 
-    private Path currentPath;        // the file being written now
-    private BufferedWriter writer;   // open on currentPath
-    private long currentSize;        // bytes in currentPath
+    private Path currentPath;
+    private BufferedWriter writer;
+    private long currentSize;
 
     public FileSink(FileOutputConfig config, LineFormatterUtil formatter) {
         this.config = config;
@@ -35,6 +32,15 @@ public class FileSink implements Sink {
 
         // Create the folder now, so a bad location fails at startup, not on the first log.
         createFolderFor(pathFor(LocalDateTime.now()));
+    }
+
+    private static void createFolderFor(Path path) {
+        Path folder = path.toAbsolutePath().getParent();
+        try {
+            Files.createDirectories(folder);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Output 'FILE': cannot create folder " + folder + " (" + e + ")");
+        }
     }
 
     // synchronized: in sync mode many app threads write at the same time.
@@ -46,14 +52,14 @@ public class FileSink implements Sink {
         try {
             Path path = pathFor(event.timestamp());
             if (!path.equals(currentPath)) {
-                open(path);                     // first write, or a new hour/day started
+                open(path);
             } else if (isFull(lineSize)) {
-                moveToBackup();                 // file reached max-size
+                moveToBackup();
                 open(path);
             }
 
             writer.write(line);
-            writer.flush();                     // written to disk now, not lost if the app crashes
+            writer.flush();
             currentSize += lineSize;
         } catch (IOException e) {
             throw new UncheckedIOException("Could not write to " + currentPath, e);
@@ -81,7 +87,7 @@ public class FileSink implements Sink {
 
     private boolean isFull(long lineSize) {
         return config.maxSizeBytes() > 0
-                && currentSize > 0                                   // never move an empty file
+                && currentSize > 0
                 && currentSize + lineSize > config.maxSizeBytes();
     }
 
@@ -91,12 +97,11 @@ public class FileSink implements Sink {
         }
         createFolderFor(path);
         writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE, StandardOpenOption.APPEND);   // keep what's already there
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         currentPath = path;
         currentSize = Files.size(path);
     }
 
-    // app.log -> app.log.1 (or .2, .3, ... whichever number is free)
     private void moveToBackup() throws IOException {
         writer.close();
         writer = null;
@@ -109,14 +114,5 @@ public class FileSink implements Sink {
         }
         Files.move(currentPath, backup);
         // TODO: max-backups setting, to delete the oldest backups
-    }
-
-    private static void createFolderFor(Path path) {
-        Path folder = path.toAbsolutePath().getParent();
-        try {
-            Files.createDirectories(folder);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Output 'FILE': cannot create folder " + folder + " (" + e + ")");
-        }
     }
 }

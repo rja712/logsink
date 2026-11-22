@@ -1,6 +1,6 @@
 package org.example.logger.manager;
 
-import org.example.logger.orchestrator.AsyncListener;
+import org.example.logger.orchestrator.async.AsyncListener;
 import org.example.logger.sink.SinkFactory;
 
 public class ShutdownManager {
@@ -9,7 +9,7 @@ public class ShutdownManager {
 
     private volatile boolean shutDown = false;
 
-    private AsyncListener asyncListener;   // null in sync mode
+    private AsyncListener asyncListener;
 
     private ShutdownManager() {
     }
@@ -26,13 +26,13 @@ public class ShutdownManager {
         if (shutDown) {
             return;
         }
-        shutDown = true;   // 1. loggers stop accepting new messages
+        shutDown = true;
 
         if (asyncListener != null) {
-            asyncListener.stop();   // 2. write out what's still in the queue, then end the thread
+            asyncListener.stop();
         }
 
-        SinkFactory.getInstance().closeAll();   // 3. close the sinks (e.g. close open files)
+        SinkFactory.getInstance().closeAll();
     }
 
     public boolean isShutDown() {

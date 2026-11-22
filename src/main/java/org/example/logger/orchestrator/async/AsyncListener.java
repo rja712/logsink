@@ -1,11 +1,10 @@
-package org.example.logger.orchestrator;
+package org.example.logger.orchestrator.async;
 
 import org.example.logger.model.LogEvent;
 import org.example.logger.sink.Sink;
 import org.example.logger.sink.SinkFactory;
 
 import java.util.List;
-
 import java.util.concurrent.TimeUnit;
 
 public final class AsyncListener implements Runnable {
@@ -38,7 +37,6 @@ public final class AsyncListener implements Runnable {
 
     @Override
     public void run() {
-        // Normal work: wait for events. poll() wakes up every 100 ms to check "running".
         while (running) {
             try {
                 LogEvent event = LogQueue.getInstance().poll(100, TimeUnit.MILLISECONDS);
@@ -50,20 +48,17 @@ public final class AsyncListener implements Runnable {
             }
         }
 
-        // Stopping: write out whatever is still in the queue.
         LogEvent event;
         while ((event = LogQueue.getInstance().poll()) != null) {
             writeToSinks(event);
         }
     }
 
-    // One sink after another, in queue order.
     private void writeToSinks(LogEvent event) {
         for (Sink sink : sinks) {
             try {
                 sink.write(event);
             } catch (RuntimeException e) {
-                // one broken sink must not stop the others, or kill this thread
                 System.err.println("[logger] sink " + sink.getClass().getSimpleName() + " failed: " + e);
             }
         }

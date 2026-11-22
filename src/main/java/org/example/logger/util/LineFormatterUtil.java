@@ -1,7 +1,7 @@
 package org.example.logger.util;
 
-import org.example.logger.model.mode.ServiceInfo;
 import org.example.logger.model.LogEvent;
+import org.example.logger.model.mode.ServiceInfo;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -33,7 +33,7 @@ public final class LineFormatterUtil {
     private static final Pattern PLACEHOLDER = Pattern.compile("<([^<>]+)>");
 
     private final String template;
-    private final ServiceInfo serviceInfo;   // from the app: name, version, ip
+    private final ServiceInfo serviceInfo;
 
     public LineFormatterUtil(String format, ServiceInfo serviceInfo) {
         this.template = (format == null || format.isBlank()) ? DEFAULT_FORMAT : format;
@@ -46,15 +46,6 @@ public final class LineFormatterUtil {
         }
     }
 
-    // Replaces every <placeholder> in the format with its value from the event.
-    // quoteReplacement: a value containing '$' or '\' must be printed as-is, not read as a regex symbol.
-    public String format(LogEvent event) {
-        return PLACEHOLDER.matcher(template)
-                .replaceAll(match -> Matcher.quoteReplacement(valueOf(fieldKey(match.group(1)), event)))
-                .stripTrailing();
-    }
-
-    // True if the format contains <line_number> (in any spelling).
     public static boolean usesLineNumber(String format) {
         if (format == null) {
             return false;
@@ -66,22 +57,6 @@ public final class LineFormatterUtil {
             }
         }
         return false;
-    }
-
-    private String valueOf(String field, LogEvent event) {
-        return switch (field) {
-            case TIME_STAMP -> event.timestamp().toString();
-            case LOG_LEVEL -> event.level().name();
-            case CLASS_NAME -> event.loggerName();
-            case THREAD_NAME -> event.threadName();
-            case LINE_NUMBER -> event.lineNumber() > 0 ? String.valueOf(event.lineNumber()) : "-";
-            case MESSAGE -> event.message();
-            case THROWABLE_TRACE -> stackTraceOf(event.throwable());
-            case IP -> orDash(serviceInfo.ip());
-            case SERVICE_NAME -> orDash(serviceInfo.name());
-            case VERSION -> orDash(serviceInfo.version());
-            default -> throw new IllegalStateException("Unhandled field: " + field);
-        };
     }
 
     private static String fieldKey(String placeholder) {
@@ -105,5 +80,28 @@ public final class LineFormatterUtil {
         StringWriter text = new StringWriter();
         throwable.printStackTrace(new PrintWriter(text));
         return text.toString().stripTrailing();
+    }
+
+    // quoteReplacement: a value containing '$' or '\' must be printed as-is, not read as a regex symbol.
+    public String format(LogEvent event) {
+        return PLACEHOLDER.matcher(template)
+                .replaceAll(match -> Matcher.quoteReplacement(valueOf(fieldKey(match.group(1)), event)))
+                .stripTrailing();
+    }
+
+    private String valueOf(String field, LogEvent event) {
+        return switch (field) {
+            case TIME_STAMP -> event.timestamp().toString();
+            case LOG_LEVEL -> event.level().name();
+            case CLASS_NAME -> event.loggerName();
+            case THREAD_NAME -> event.threadName();
+            case LINE_NUMBER -> event.lineNumber() > 0 ? String.valueOf(event.lineNumber()) : "-";
+            case MESSAGE -> event.message();
+            case THROWABLE_TRACE -> stackTraceOf(event.throwable());
+            case IP -> orDash(serviceInfo.ip());
+            case SERVICE_NAME -> orDash(serviceInfo.name());
+            case VERSION -> orDash(serviceInfo.version());
+            default -> throw new IllegalStateException("Unhandled field: " + field);
+        };
     }
 }
