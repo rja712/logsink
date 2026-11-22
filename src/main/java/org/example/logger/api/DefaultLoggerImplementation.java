@@ -56,9 +56,11 @@ public class DefaultLoggerImplementation implements Logger {
             System.err.println("[logger] logging is shut down, dropped: " + level + " " + name + " - " + message);
             return;
         }
-        if (level.isAtLeast(config.level())) {
-            int lineNumber = LineNumberUitl.find();
-            dispatcher.dispatch(LogEvent.of(level, name, lineNumber, message, throwable));
+        if (!level.isAtLeast(config.level())) {
+            return;
         }
+
+        LogEvent logEvent = LogEvent.of(level, name, LineNumberUitl.find(), message, throwable);
+        dispatcher.dispatch(logEvent);
     }
 }
