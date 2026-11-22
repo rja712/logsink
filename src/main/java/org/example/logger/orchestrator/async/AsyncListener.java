@@ -44,18 +44,16 @@ public final class AsyncListener implements Runnable {
     public void stop() {
         try {
             boolean stopSignalAdded = LogQueue.getInstance().offer(LogEvent.getPoisonPill(), stopWaitMillis, TimeUnit.MILLISECONDS);
-            if (!stopSignalAdded) {
-                System.err.println("[logger] could not add stop signal, queue is full");
+            if (stopSignalAdded) {
+                asyncListenerThread.join(stopWaitMillis); // Main waits `stopWaitMillis` seconds for asyncListenerThread to terminate
             }
-            asyncListenerThread.join(stopWaitMillis); // Joins asyncListenerThread with the main app thread
         } catch (InterruptedException e) {
-            System.err.println("[logger] listener did not finish shutdown: main thread interrupted " + e.getMessage());
             Thread.currentThread().interrupt();
         }
 
         if (asyncListenerThread.isAlive()) {
             asyncListenerThread.interrupt();
-            System.err.println("[logger] listener did not finish in " + stopWaitMillis + " ms, stopped it");
+            System.err.println("[logger] listener did not stop in " + stopWaitMillis + " ms, interrupted it");
         }
 
         if (!LogQueue.getInstance().isEmpty()){
