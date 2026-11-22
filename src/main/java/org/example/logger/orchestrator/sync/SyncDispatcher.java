@@ -1,5 +1,7 @@
 package org.example.logger.orchestrator.sync;
 
+import org.example.logger.manager.ShutdownLock;
+import org.example.logger.manager.ShutdownManager;
 import org.example.logger.model.LogEvent;
 import org.example.logger.orchestrator.Dispatcher;
 import org.example.logger.sink.Sink;
@@ -13,12 +15,21 @@ public class SyncDispatcher implements Dispatcher {
 
     @Override
     public void dispatch(LogEvent event) {
-        for (Sink sink : sinks) {
-            try {
-                sink.write(event);
-            } catch (RuntimeException e) {
-                System.err.println("[logger] sink " + sink.getClass().getSimpleName() + " failed: " + e);
+        ShutdownLock.readLock().lock();
+        try {
+            if (ShutdownManager.getInstance().isShutDown()) {
+                System.err.println("[logger] logging is shut down, dropped: " + event.level() + " " + event.loggerName() + " - " + event.message());
+                return;
             }
+            for (Sink sink : sinks) {
+                try {
+                    sink.write(event);
+                } catch (RuntimeException e) {
+                    System.err.println("[logger] sink " + sink.getClass().getSimpleName() + " failed: " + e);
+                }
+            }
+        } finally {
+            ShutdownLock.readLock().unlock();
         }
     }
 }

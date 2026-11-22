@@ -1,6 +1,5 @@
 package org.example.logger.manager;
 
-import org.example.logger.orchestrator.async.AsyncDispatcher;
 import org.example.logger.orchestrator.async.AsyncListener;
 import org.example.logger.sink.SinkFactory;
 
@@ -21,7 +20,12 @@ public class ShutdownManager {
         if (shutDown) {
             return;
         }
-        shutDown = true;
+        ShutdownLock.writeLock().lock();
+        try {
+            shutDown = true;
+        } finally {
+            ShutdownLock.writeLock().unlock();
+        }
 
         if (ConfigManager.getInstance().getAsyncConfig() != null) {
             AsyncListener.getInstance().stop();
