@@ -17,14 +17,14 @@ public class ShutdownManager {
     }
 
 
-    public void shutdown(AsyncListener asyncListener) {
+    public void shutdown() {
         if (shutDown) {
             return;
         }
         shutDown = true;
 
-        if (asyncListener != null) {
-            asyncListener.stop();
+        if (ConfigManager.getInstance().getAsyncConfig() != null) {
+            AsyncListener.getInstance().stop();
         }
 
         SinkFactory.getInstance().closeAll();

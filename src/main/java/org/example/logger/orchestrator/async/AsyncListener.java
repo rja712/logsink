@@ -9,21 +9,38 @@ import java.util.List;
 
 public final class AsyncListener implements Runnable {
 
+     private static volatile AsyncListener instance;
+
     private final List<Sink> sinks = SinkFactory.getInstance().getSinks();
-    private final Thread thread = new Thread(this, "logger-async-listener");
+    private final long stopWaitMillis = ConfigManager.getInstance().getAsyncConfig().shutdownTimeoutMillis();
+    private final Thread thread = Thread.ofPlatform()
+            .name("logger-async-listener")
+            .daemon(true)
+            .unstarted(this);
 
     private AsyncListener() {
-        thread.setDaemon(true);
     }
 
-    public static void start() {
+    public static AsyncListener getInstance() {
+        if (instance == null) {
+            synchronized (AsyncListener.class) {
+                if (instance == null) {
+                    instance = new AsyncListener();
+                }
+            }
+        }
+        return instance;
+    }
+
+
+    public synchronized void start() {
+        if (thread.getState() != Thread.State.NEW) {
+            return;
+        }
         thread.start();
     }
 
     public void stop() {
-
-        long stopWaitMillis = ConfigManager.getInstance().getAsyncConfig().shutdownTimeoutMillis();
-
         try {
             LogQueue.getInstance().put(LogEvent.poisonPill());
             thread.join(stopWaitMillis);
