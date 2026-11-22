@@ -13,7 +13,7 @@ public final class AsyncListener implements Runnable {
 
     private final List<Sink> sinks = SinkFactory.getInstance().getSinks();
     private final long stopWaitMillis = ConfigManager.getInstance().getAsyncConfig().shutdownTimeoutMillis();
-    private final Thread thread = Thread.ofPlatform()
+    private final Thread asyncListenerThread = Thread.ofPlatform()
             .name("logger-async-listener")
             .daemon(true)
             .unstarted(this);
@@ -34,41 +34,36 @@ public final class AsyncListener implements Runnable {
 
 
     public synchronized void start() {
-        if (thread.getState() != Thread.State.NEW) {
+        if (asyncListenerThread.getState() != Thread.State.NEW) {
             return;
         }
-        thread.start();
+        asyncListenerThread.start();
     }
 
     public void stop() {
         try {
-            LogQueue.getInstance().put(LogEvent.poisonPill());
-            thread.join(stopWaitMillis);
+            LogQueue.safePut(LogEvent.getPoisonPill());
+            asyncListenerThread.join(stopWaitMillis);
         } catch (InterruptedException e) {
+            System.err.println("[logger] listener did not finish shutdown: main thread interrupted " + e.getMessage());
             Thread.currentThread().interrupt();
         }
 
-        if (thread.isAlive()) {
-            thread.interrupt();
+        if (asyncListenerThread.isAlive()) {
+            asyncListenerThread.interrupt();
             System.err.println("[logger] listener did not finish in " + stopWaitMillis + " ms, stopped it");
         }
 
-        if (!LogQueue.getInstance().isEmpty()){
-            System.err.println("[logger] logging is shut down, dropped: " + LogQueue.getInstance().size() + " log lines");
+        if (LogQueue.size() > 0){
+            System.err.println("[logger] logging is shut down, dropped: " + LogQueue.size() + " log lines");
         }
     }
 
     @Override
     public void run() {
         while (true) {
-            LogEvent event;
-            try {
-                event = LogQueue.getInstance().take();
-            } catch (InterruptedException e) {
-                return;
-            }
-
-            if (LogEvent.isPoisonPill(event)) {
+            LogEvent event = LogQueue.safeTake();
+            if (event == null || LogEvent.isPoisonPill(event)) {
                 return;
             }
             writeToSinks(event);

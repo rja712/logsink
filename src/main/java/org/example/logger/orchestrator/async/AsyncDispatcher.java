@@ -7,7 +7,7 @@ public class AsyncDispatcher implements Dispatcher {
 
     @Override
     public void dispatch(LogEvent event) {
-        boolean accepted = LogQueue.getInstance().offer(event);
+        boolean accepted = LogQueue.safeOffer(event);
         if (!accepted) {
             System.err.println("[logger] queue full, dropped: " + event.level() + " " + event.loggerName() + " - " + event.message());
         }

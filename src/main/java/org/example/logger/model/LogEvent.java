@@ -11,7 +11,8 @@ public record LogEvent(
         String message,
         Throwable throwable) {
 
-    public static final String POISON_PILL = "POISON_PILL";
+
+    private static final LogEvent POISON_PILL = new LogEvent(null, null, "POISON_PILL", null, 0, null, null);
 
     public static LogEvent of(LogLevel level, String loggerName, int lineNumber, String message, Throwable throwable) {
         return new LogEvent(
@@ -24,12 +25,12 @@ public record LogEvent(
                 throwable);
     }
 
-    public static LogEvent poisonPill() {
-        return new LogEvent(null, null, POISON_PILL, null, 0, null, null);
+    public static LogEvent getPoisonPill() {
+        return POISON_PILL;
     }
 
     public static boolean isPoisonPill(LogEvent event){
-        return POISON_PILL.equals(event.loggerName);
+        return POISON_PILL.equals(event);
     }
 
 }
