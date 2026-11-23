@@ -45,7 +45,7 @@ public class LoggerRegistry {
     }
 
     public Logger getLogger(Class<?> type) {
-        return loggers.computeIfAbsent(type.getSimpleName(), this::createLogger);
+        return loggers.computeIfAbsent(type.getName(), this::createLogger);
     }
 
     private Logger createLogger(String name) {
